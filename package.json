@@ -1,5 +1,5 @@
 {
-  "name": "webxr-demo",
+  "name": "webxr-ar-demo",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,17 +7,19 @@
     "start": "webpack serve --open",
     "build": "webpack"
   },
-  "author": "Abhishek Verma <ahk.verma102@gmail.com> (https://abhishekverma.dev/)",
+  "author": "",
   "license": "ISC",
   "dependencies": {
-    "html-webpack-plugin": "^5.6.0",
-    "stats.js": "^0.17.0",
-    "three": "^0.164.1",
-    "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.4"
+    "three": "^0.128.0",
+    "ar.js": "^2.1.4",
+    "webpack": "^5.36.2",
+    "webpack-cli": "^4.6.0",
+    "webpack-dev-server": "^4.7.1",
+    "html-webpack-plugin": "^5.3.1"
   },
   "devDependencies": {
-    "babel-loader": "^8.2.2"
+    "babel-loader": "^8.2.2",
+    "css-loader": "^5.2.6",
+    "style-loader": "^2.0.0"
   }
 }

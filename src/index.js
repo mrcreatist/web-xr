@@ -1,64 +1,81 @@
 import * as THREE from 'three';
-import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import './style.css';
 
-let camera, scene, renderer;
-let stats;
-let controller;
+let scene, camera, renderer, arToolkitSource, arToolkitContext, markerRoot;
 
 init();
 animate();
 
 function init () {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-
+    // Scene
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    // Camera
+    camera = new THREE.Camera();
+    scene.add(camera);
 
+    // Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    container.appendChild(renderer.domElement);
+    document.getElementById('container').appendChild(renderer.domElement);
 
-    document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+    // AR Toolkit Source
+    arToolkitSource = new THREEx.ArToolkitSource({
+        sourceType: 'webcam',
+    });
 
-    controller = renderer.xr.getController(0);
-    controller.addEventListener('select', onSelect);
-    scene.add(controller);
+    arToolkitSource.init(function onReady () {
+        onResize();
+    });
 
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    light.position.set(0.5, 1, 0.25);
-    scene.add(light);
+    // Handle resizing
+    window.addEventListener('resize', function () {
+        onResize();
+    });
 
-    window.addEventListener('resize', onWindowResize, false);
+    // AR Toolkit Context
+    arToolkitContext = new THREEx.ArToolkitContext({
+        cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/data/data/camera_para.dat',
+        detectionMode: 'mono',
+    });
 
-    stats = new Stats();
-    container.appendChild(stats.dom);
+    arToolkitContext.init(function onCompleted () {
+        camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+    });
+
+    // Marker Root
+    markerRoot = new THREE.Group();
+    scene.add(markerRoot);
+
+    let markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+        type: 'pattern',
+        patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/data/data/patt.hiro',
+    });
+
+    // Add a box
+    let geometry = new THREE.BoxGeometry(1, 1, 1);
+    let material = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
+    let cube = new THREE.Mesh(geometry, material);
+    markerRoot.add(cube);
 }
 
-function onWindowResize () {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+function onResize () {
+    arToolkitSource.onResizeElement();
+    arToolkitSource.copyElementSizeTo(renderer.domElement);
+    if (arToolkitContext.arController !== null) {
+        arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+    }
 }
 
-function onSelect () {
-    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
-    mesh.quaternion.setFromRotationMatrix(controller.matrixWorld);
-    scene.add(mesh);
+function update () {
+    if (arToolkitSource.ready !== false) {
+        arToolkitContext.update(arToolkitSource.domElement);
+    }
 }
 
 function animate () {
-    renderer.setAnimationLoop(render);
-}
-
-function render () {
+    requestAnimationFrame(animate);
+    update();
     renderer.render(scene, camera);
-    stats.update();
 }
